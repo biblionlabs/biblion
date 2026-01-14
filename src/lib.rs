@@ -1,4 +1,12 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
 use freya::prelude::*;
+
+mod app;
+
+use app::init;
 
 #[cfg(target_os = "android")]
 use winit::platform::android::activity::AndroidApp;
@@ -10,7 +18,7 @@ fn android_main(droid_app: AndroidApp) {
 
     launch(
         LaunchConfig::new().with_window(
-            WindowConfig::new(app)
+            WindowConfig::new(init)
                 .with_size(500., 450.)
                 .with_window_attributes(|_attr, event_loop_builder| {
                     event_loop_builder.with_android_app(droid_app)
@@ -22,43 +30,5 @@ fn android_main(droid_app: AndroidApp) {
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
 fn main() {
-    launch(LaunchConfig::new().with_window(WindowConfig::new(app).with_size(600., 450.)))
-}
-
-fn app() -> impl IntoElement {
-    let mut count = use_state(|| 4);
-
-    let counter = rect()
-        .width(Size::fill())
-        .height(Size::percent(50.))
-        .center()
-        .color((255, 255, 255))
-        .background((15, 163, 242))
-        .font_weight(FontWeight::BOLD)
-        .font_size(75.)
-        .shadow((0., 4., 20., 4., (0, 0, 0, 80)))
-        .child(count.read().to_string());
-
-    let actions = rect()
-        .horizontal()
-        .width(Size::fill())
-        .height(Size::percent(50.))
-        .center()
-        .spacing(8.0)
-        .child(
-            Button::new()
-                .on_press(move |_| {
-                    *count.write() += 1;
-                })
-                .child("Increase"),
-        )
-        .child(
-            Button::new()
-                .on_press(move |_| {
-                    *count.write() -= 1;
-                })
-                .child("Decrease"),
-        );
-
-    rect().child(counter).child(actions)
+    launch(LaunchConfig::new().with_window(WindowConfig::new(init).with_size(600., 450.)))
 }
