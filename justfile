@@ -6,6 +6,9 @@ genkey key_alias key_store:
 build:
     docker run --rm -it -v "$(pwd)/:/src" -v "$(pwd)/.gradle/caches:/root/.gradle/caches" -w /src rust-android:1.90-sdk-36 assembleRelease
 
+shell:
+    docker run --rm -it -v "$(pwd)/:/src" -v "$(pwd)/.gradle/caches:/root/.gradle/caches" -w /src --entrypoint /bin/bash rust-android:1.90-sdk-36
+
 sign key_alias key_store:
     # Run apksigner to sign generated apk
     docker run --rm -it -v "$(pwd)/:/src" -w /src --entrypoint apksigner rust-android:1.90-sdk-36 \

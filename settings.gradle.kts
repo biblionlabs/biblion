@@ -18,5 +18,5 @@ dependencyResolutionManagement {
    }
 }
 
-rootProject.name = "Freya"
+rootProject.name = "Biblion"
 include(":android")
