@@ -1,3 +1,7 @@
+default:
+    cargo run -F desktop
+    # dx serve --hot-patch --features desktop
+
 genkey key_alias key_store:
     # Run keytool to generate key
     docker run --rm -it -v "$(pwd)/:/src" -w /src --entrypoint keytool rust-android:1.90-sdk-36 \

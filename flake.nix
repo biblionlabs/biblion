@@ -32,6 +32,8 @@
 
           wayland
           sqlite
+
+          vulkan-loader
         ];
 
         appPkg = (pkgs.rustPlatform.buildRustPackage.override { stdenv = pkgs.clangStdenv; }) (finalAttrs: {
@@ -40,6 +42,7 @@
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
           doCheck = false;
+          cargoExtraArgs = "-F desktop --bin biblion";
 
         nativeBuildInputs = with pkgs;
           [
@@ -113,6 +116,7 @@
 
             cargo-dist
             cargo-release
+            dioxus-cli
             git-cliff
 
             pkg-config
