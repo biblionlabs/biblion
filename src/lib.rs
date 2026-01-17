@@ -5,8 +5,11 @@
 use freya::prelude::*;
 
 mod app;
+mod utils;
 
 use app::init;
+
+pub const APP_NAME: &str = env!("CARGO_CRATE_NAME");
 
 #[cfg(target_os = "android")]
 use winit::platform::android::activity::AndroidApp;
