@@ -1,7 +1,18 @@
 [package]
 name = "biblion"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+description = "Application to study the bible with variants/comments/references/cross-references and more"
+authors = ["Sergio Ribera <contact@sergioribera.rs>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/biblionlabs/biblion"
+homepage = "https://github.com/biblionlabs/biblion"
+
+[package.metadata.wix]
+upgrade-guid = "AE3707FA-F0E8-40CB-90EF-639C560DF456"
+path-guid = "30AB1E91-C2CE-41FF-94CA-F24E7F3E1D5F"
+license = false
+eula = false
 
 [lib]
 crate-type = ["cdylib"]
@@ -27,3 +38,8 @@ desktop = []
 path = "src/lib.rs"
 name = "biblion"
 required-features = ["desktop"]
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
