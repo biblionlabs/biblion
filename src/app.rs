@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use freya::prelude::*;
-use setup_core::{event, TantivySink};
+use setup_core::{TantivySink, event};
 
+use crate::components::{Toolbar, ToolbarItem};
 use crate::utils::data_dir;
 
 #[derive(Clone, PartialEq, PartialOrd)]
@@ -111,9 +112,13 @@ pub fn init() -> impl IntoElement {
         let source_variants = source_variants.clone();
         let database = database.clone();
         move || {
-            source_variants.install_cross(database.as_ref()).unwrap();
+            source_variants
+                .install_cross(database.as_ref())
+                .inspect_err(|e| tracing::error!("Failed to install cross references: {e}"))
+                .unwrap();
             source_variants
                 .install_langs(database.as_ref(), &[])
+                .inspect_err(|e| tracing::error!("Failed to install languages: {e}"))
                 .unwrap();
         }
     });
@@ -122,70 +127,89 @@ pub fn init() -> impl IntoElement {
 
     rect()
         .content(Content::Flex)
-        .center()
-        .padding(10.)
-        .spacing(10.)
         .expanded()
         .vertical()
         .theme_background()
         .child(
-            rect()
-                .content(Content::Flex)
-                .center()
-                .width(Size::Inner)
-                .padding(5.)
-                .spacing(10.)
-                .horizontal()
-                .child(
-                    Button::new()
-                        .compact()
-                        .padding(5.)
-                        .child(label().text("Install Bible")),
-                )
-                .child(
-                    Input::new()
-                        .auto_focus(true)
-                        .width(Size::Fill)
-                        .placeholder("Search: Juan 1:3")
-                        .value(search_state.read().clone())
-                        .on_change(move |search| search_state.set(search)),
-                ),
+            Toolbar::new()
+                .child(ToolbarItem::new(
+                    "Tools".to_string(),
+                    Menu::new().child(MenuButton::new().child("Install Bible").on_press(
+                        move |_| {
+                            ContextMenu::close();
+                        },
+                    )),
+                ))
+                .child(ToolbarItem::new(
+                    "Preferences".to_string(),
+                    Menu::new().child(MenuButton::new().child("Settings").on_press(
+                        move |_| {
+                            show_bible_manager.set(true);
+                            ContextMenu::close();
+                        },
+                    )),
+                )),
         )
         .child(
-            ScrollView::new()
-                .expanded()
-                .direction(Direction::Vertical)
-                .scroll_with_arrows(true)
+            rect()
+                .content(Content::Flex)
+                .padding(10.)
                 .spacing(10.)
-                .children(filtered_verses.iter().enumerate().map(|(i, verse)| {
-                    Button::new()
-                        .background(Color::from_hex("#2C2C2C").unwrap())
-                        .hover_background(Color::from_hex("#353535").unwrap())
+                .expanded()
+                .vertical()
+                .child(
+                    rect()
+                        .content(Content::Flex)
+                        .center()
+                        .width(Size::Inner)
+                        .padding(5.)
+                        .spacing(10.)
+                        .horizontal()
                         .child(
-                            rect()
-                                .key(i)
-                                .rounded()
-                                .vertical()
-                                .spacing(5.)
-                                .padding(5.)
-                                .width(Size::fill())
-                                .content(Content::Flex)
-                                .children([
-                                    label()
-                                        .color(Color::WHITE)
-                                        .font_weight(FontWeight::BOLD)
-                                        .text(format!(
-                                            "{} {}:{}",
-                                            verse.book, verse.chapter, verse.verse.0
-                                        ))
-                                        .into_element(),
-                                    label()
-                                        .color(Color::WHITE)
-                                        .text(verse.text.clone())
-                                        .into_element(),
-                                ]),
-                        )
-                        .into()
-                })),
+                            Input::new()
+                                .auto_focus(true)
+                                .width(Size::Fill)
+                                .placeholder("Search: Juan 1:3")
+                                .value(search_state.read().clone())
+                                .on_change(move |search| search_state.set(search)),
+                        ),
+                )
+                .child(
+                    ScrollView::new()
+                        .expanded()
+                        .direction(Direction::Vertical)
+                        .scroll_with_arrows(true)
+                        .spacing(10.)
+                        .children(filtered_verses.iter().enumerate().map(|(i, verse)| {
+                            Button::new()
+                                .background(Color::from_hex("#2C2C2C").unwrap())
+                                .hover_background(Color::from_hex("#353535").unwrap())
+                                .child(
+                                    rect()
+                                        .key(i)
+                                        .rounded()
+                                        .vertical()
+                                        .spacing(5.)
+                                        .padding(5.)
+                                        .width(Size::fill())
+                                        .content(Content::Flex)
+                                        .children([
+                                            label()
+                                                .color(Color::WHITE)
+                                                .font_weight(FontWeight::BOLD)
+                                                .text(format!(
+                                                    "{} {}:{}",
+                                                    verse.book, verse.chapter, verse.verse.0
+                                                ))
+                                                .into_element(),
+                                            label()
+                                                .color(Color::WHITE)
+                                                .text(verse.text.clone())
+                                                .into_element(),
+                                        ]),
+                                )
+                                .into()
+                        })),
+                ),
         )
 }
