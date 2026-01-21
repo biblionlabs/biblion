@@ -16,11 +16,6 @@ impl ToolbarItem {
             key: DiffKey::None,
         }
     }
-
-    pub fn key(mut self, key: impl Into<DiffKey>) -> Self {
-        self.key = key.into();
-        self
-    }
 }
 
 impl KeyExt for ToolbarItem {

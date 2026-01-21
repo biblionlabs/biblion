@@ -3,6 +3,9 @@ use std::path::{Path, PathBuf};
 
 pub fn data_dir(sub_dir: &[impl AsRef<Path>]) -> PathBuf {
     let data_path = app_data_dir();
+    if !data_path.exists() {
+        std::fs::create_dir_all(&data_path).unwrap();
+    }
     if sub_dir.is_empty() {
         return data_path.clone();
     }

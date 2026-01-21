@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use freya::prelude::*;
-use setup_core::{TantivySink, event};
+use setup_core::TantivySink;
 
 use crate::components::{Toolbar, ToolbarItem};
+use crate::dialog::manage_bibles;
 use crate::utils::data_dir;
 
 #[derive(Clone, PartialEq, PartialOrd)]
@@ -27,54 +28,13 @@ struct Verse {
 
 pub fn init() -> impl IntoElement {
     let mut theme = use_init_root_theme(|| PreferredTheme::Dark.to_theme());
+    let mut show_bible_manager = use_state(|| false);
     let mut search_state = use_state(String::new);
     let mut filtered_verses = use_state(Vec::new);
 
-    use_side_effect(move || theme.set(PreferredTheme::Dark.to_theme()));
-
-    let cache_dir = data_dir(&["cache"]);
     let database = Arc::new(TantivySink::from(data_dir(&["index"])));
-    let source_variants = Arc::new(
-        setup_core::SetupBuilder::new().cache_path(cache_dir)
-        // Add Reina Valera 1960 Bible
-        .add_bible_from_url(
-            "spa_rv1960",
-            "https://raw.githubusercontent.com/biblionlabs/extra_data_source/refs/heads/main/bibles/spa_rv1960/manifest.json", 
-            "https://raw.githubusercontent.com/biblionlabs/extra_data_source/refs/heads/main/bibles/spa_rv1960/desc.json",
-            Some("https://raw.githubusercontent.com/biblionlabs/extra_data_source/refs/heads/main/bibles/{bible_id}/books/{book}.json")
-        )
-        .on::<event::Error>({
-            move |_e| {
-                // Notification::new().summary("Worship Screens Failed to install Bible").body(&e).show().inspect_err(|e| error!("{e}")).unwrap();
-            }})
-        .on::<event::Progress>({
-            move |(step_id, _current, _total)| {
-                if step_id == "crossrefs" {
-                    return;
-                }
-                // if let Some(window) = main_window.upgrade() {
-                //     let state = window.global::<MainState>();
-                //     let bibles = state.get_bibles();
-                //     if let Some((idx, mut bible)) = bibles.iter().position(|b| b.id == step_id).and_then(|row| bibles.row_data(row).map(|b| (row, b))) {
-                //         bible.installing = current != total;
-                //         bible.installed = current == total;
-                //         bible.progress = current as f32 / total as f32;
-                //         if current == total {
-                //             _ = Notification::new()
-                //                 .summary("Worship Screens Bible Installed")
-                //                 .body(&format!("{} success installed", bible.name.as_str()))
-                //                 .show()
-                //                 .inspect_err(|e| error!("{e}"));
-                //         }
-                //         bibles.set_row_data(idx, bible);
-                //     }
-                // }
-                // if let Some(bibles_manager) = bibles_manager.get() {
-                //     bibles_manager.update_progress(&step_id, current, total);
-                // }
-            }})
-        .build().1
-    );
+
+    use_side_effect(move || theme.set(PreferredTheme::Dark.to_theme()));
 
     use_side_effect({
         let search_state = search_state.clone();
@@ -83,7 +43,7 @@ pub fn init() -> impl IntoElement {
             let s = search_state.read();
             let index = database.verse_index();
             let Ok(verses_found) =
-                setup_core::service_db::SearchedVerse::from_search(s.as_str(), index)
+                setup_core::service_db::SearchedVerse::from_search(s.as_str(), index, None)
             else {
                 return;
             };
@@ -108,21 +68,6 @@ pub fn init() -> impl IntoElement {
         }
     });
 
-    std::thread::spawn({
-        let source_variants = source_variants.clone();
-        let database = database.clone();
-        move || {
-            source_variants
-                .install_cross(database.as_ref())
-                .inspect_err(|e| tracing::error!("Failed to install cross references: {e}"))
-                .unwrap();
-            source_variants
-                .install_langs(database.as_ref(), &[])
-                .inspect_err(|e| tracing::error!("Failed to install languages: {e}"))
-                .unwrap();
-        }
-    });
-
     let filtered_verses = filtered_verses.read().clone();
 
     rect()
@@ -130,26 +75,14 @@ pub fn init() -> impl IntoElement {
         .expanded()
         .vertical()
         .theme_background()
-        .child(
-            Toolbar::new()
-                .child(ToolbarItem::new(
-                    "Tools".to_string(),
-                    Menu::new().child(MenuButton::new().child("Install Bible").on_press(
-                        move |_| {
-                            ContextMenu::close();
-                        },
-                    )),
-                ))
-                .child(ToolbarItem::new(
-                    "Preferences".to_string(),
-                    Menu::new().child(MenuButton::new().child("Settings").on_press(
-                        move |_| {
-                            show_bible_manager.set(true);
-                            ContextMenu::close();
-                        },
-                    )),
-                )),
-        )
+        .child(Toolbar::new().child(ToolbarItem::new(
+            "Tools".to_string(),
+            Menu::new().child(MenuButton::new().child("Install Bible").on_press(move |_| {
+                show_bible_manager.set(true);
+                ContextMenu::close();
+            })),
+        )))
+        .child(manage_bibles(show_bible_manager, database))
         .child(
             rect()
                 .content(Content::Flex)

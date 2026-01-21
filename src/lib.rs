@@ -6,6 +6,7 @@ use freya::prelude::*;
 
 mod app;
 mod components;
+mod dialog;
 mod utils;
 
 use app::init;
