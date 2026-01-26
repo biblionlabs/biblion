@@ -1,6 +1,6 @@
 [package]
 name = "biblion"
-version = "0.1.0"
+version = "0.1.1-alpha.1"
 edition = "2024"
 description = "Application to study the bible with variants/comments/references/cross-references and more"
 authors = ["Sergio Ribera <contact@sergioribera.rs>"]
