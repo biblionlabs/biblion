@@ -15,7 +15,7 @@ license = false
 eula = false
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
 
 [dependencies]
 async-io = { version = "2.6.0", features = ["tracing"] }
@@ -39,11 +39,6 @@ winit = { version = "0.30.12", features = [
 [features]
 default = []
 desktop = []
-
-[[bin]]
-path = "src/lib.rs"
-name = "biblion"
-required-features = ["desktop"]
 
 # The profile that 'dist' will build with
 [profile.dist]
