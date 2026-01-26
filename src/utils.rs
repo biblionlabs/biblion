@@ -1,4 +1,5 @@
 use crate::APP_NAME;
+use std::env;
 use std::path::{Path, PathBuf};
 
 pub fn data_dir(sub_dir: &[impl AsRef<Path>]) -> PathBuf {
@@ -45,14 +46,9 @@ fn app_data_dir() -> PathBuf {
 
     #[cfg(any(target_os = "macos", target_os = "linux",))]
     {
-        use std::env;
-
         let home = env::var_os("HOME")
             .and_then(|h| h.into_string().ok())
             .or_else(|| {
-                #[cfg(unix)]
-                use std::process::Command;
-
                 if let Some(user) = env::var_os("USER") {
                     #[cfg(not(any(target_os = "macos", target_os = "ios")))]
                     let path = PathBuf::from("/home").join(&user);
@@ -62,7 +58,7 @@ fn app_data_dir() -> PathBuf {
                 }
 
                 #[cfg(unix)]
-                return Command::new("id")
+                return std::process::Command::new("id")
                     .arg("-u")
                     .output()
                     .ok()
@@ -82,20 +78,23 @@ fn app_data_dir() -> PathBuf {
                         None
                     })
                     .or_else(|| {
-                        Command::new("whoami").output().ok().and_then(|output| {
-                            if output.status.success() {
-                                let user =
-                                    String::from_utf8_lossy(&output.stdout).trim().to_string();
-                                if !user.is_empty() {
-                                    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-                                    let path = PathBuf::from("/home").join(&user);
-                                    #[cfg(any(target_os = "macos", target_os = "ios"))]
-                                    let path = PathBuf::from("/Users").join(&user);
-                                    return path.to_str().map(ToString::to_string);
+                        std::process::Command::new("whoami")
+                            .output()
+                            .ok()
+                            .and_then(|output| {
+                                if output.status.success() {
+                                    let user =
+                                        String::from_utf8_lossy(&output.stdout).trim().to_string();
+                                    if !user.is_empty() {
+                                        #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+                                        let path = PathBuf::from("/home").join(&user);
+                                        #[cfg(any(target_os = "macos", target_os = "ios"))]
+                                        let path = PathBuf::from("/Users").join(&user);
+                                        return path.to_str().map(ToString::to_string);
+                                    }
                                 }
-                            }
-                            None
-                        })
+                                None
+                            })
                     });
                 #[cfg(not(unix))]
                 None
@@ -115,9 +114,7 @@ fn app_data_dir() -> PathBuf {
         #[cfg(target_os = "linux")]
         {
             if let Some(xdg) = env::var_os("XDG_DATA_HOME") {
-                use std::path::PathBuf;
-
-                return PathBuf::from(xdg).join(APP_NAME);
+                return std::path::PathBuf::from(xdg).join(APP_NAME);
             }
             home_path.join(".local").join("share").join(APP_NAME)
         }
