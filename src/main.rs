@@ -3,8 +3,8 @@
     windows_subsystem = "windows"
 )]
 
-use freya::prelude::*;
 use biblion::app::init;
+use freya::prelude::*;
 
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]

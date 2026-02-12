@@ -1,30 +1,11 @@
 use std::sync::Arc;
 
 use freya::prelude::*;
-use setup_core::TantivySink;
+use setup_core::{DbSink, TantivySink};
 
 use crate::components::{Toolbar, ToolbarItem};
 use crate::dialog::manage_bibles;
 use crate::utils::data_dir;
-
-#[derive(Clone, PartialEq, PartialOrd)]
-struct Bible {
-    id: String,
-    name: String,
-    english_name: String,
-    installed: bool,
-    installing: bool,
-    progress: f32,
-}
-
-#[derive(Clone, PartialEq, PartialOrd)]
-struct Verse {
-    bible: Bible,
-    book: String,
-    chapter: i32,
-    verse: (i32, i32),
-    text: String,
-}
 
 pub fn init() -> impl IntoElement {
     let mut theme = use_init_root_theme(|| PreferredTheme::Dark.to_theme());
@@ -41,30 +22,10 @@ pub fn init() -> impl IntoElement {
         let database = database.clone();
         move || {
             let s = search_state.read();
-            let index = database.verse_index();
-            let Ok(verses_found) =
-                setup_core::service_db::SearchedVerse::from_search(s.as_str(), index, None)
-            else {
+            let Ok(verses_found) = database.search_full_chapter(s.as_str(), None) else {
                 return;
             };
-            let v = verses_found
-                .iter()
-                .map(|v| Verse {
-                    bible: Bible {
-                        english_name: v.bible.english_name.clone(),
-                        id: v.bible.id.clone(),
-                        installed: false,
-                        installing: false,
-                        name: v.bible.name.clone(),
-                        progress: 0.0,
-                    },
-                    book: v.book.clone(),
-                    chapter: v.chapter,
-                    text: v.text.clone(),
-                    verse: v.verse,
-                })
-                .collect::<Vec<_>>();
-            filtered_verses.set(v);
+            filtered_verses.set(verses_found);
         }
     });
 
@@ -113,35 +74,49 @@ pub fn init() -> impl IntoElement {
                         .direction(Direction::Vertical)
                         .scroll_with_arrows(true)
                         .spacing(10.)
-                        .children(filtered_verses.iter().enumerate().map(|(i, verse)| {
-                            Button::new()
-                                .background(Color::from_hex("#2C2C2C").unwrap())
-                                .hover_background(Color::from_hex("#353535").unwrap())
-                                .child(
-                                    rect()
-                                        .key(i)
-                                        .rounded()
-                                        .vertical()
-                                        .spacing(5.)
-                                        .padding(5.)
-                                        .width(Size::fill())
-                                        .content(Content::Flex)
-                                        .children([
-                                            label()
-                                                .color(Color::WHITE)
-                                                .font_weight(FontWeight::BOLD)
-                                                .text(format!(
-                                                    "{} {}:{}",
-                                                    verse.book, verse.chapter, verse.verse.0
-                                                ))
-                                                .into_element(),
-                                            label()
-                                                .color(Color::WHITE)
-                                                .text(verse.text.clone())
-                                                .into_element(),
-                                        ]),
-                                )
-                                .into()
+                        .children(filtered_verses.iter().flat_map(|verse| {
+                            verse
+                                .verses
+                                .iter()
+                                .enumerate()
+                                .flat_map(|(i, content)| {
+                                    if !content.highlighted {
+                                        return None;
+                                    }
+                                    Some(
+                                        Button::new()
+                                            .background(Color::from_hex("#2C2C2C").unwrap())
+                                            .hover_background(Color::from_hex("#353535").unwrap())
+                                            .child(
+                                                rect()
+                                                    .key(i)
+                                                    .rounded()
+                                                    .vertical()
+                                                    .spacing(5.)
+                                                    .padding(5.)
+                                                    .width(Size::fill())
+                                                    .content(Content::Flex)
+                                                    .children([
+                                                        label()
+                                                            .color(Color::WHITE)
+                                                            .font_weight(FontWeight::BOLD)
+                                                            .text(format!(
+                                                                "{} {}:{}",
+                                                                verse.book_name,
+                                                                verse.chapter,
+                                                                content.verse_number
+                                                            ))
+                                                            .into_element(),
+                                                        label()
+                                                            .color(Color::WHITE)
+                                                            .text(content.text.clone())
+                                                            .into_element(),
+                                                    ]),
+                                            )
+                                            .into_element(),
+                                    )
+                                })
+                                .collect::<Vec<_>>()
                         })),
                 ),
         )

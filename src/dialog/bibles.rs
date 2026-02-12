@@ -6,7 +6,7 @@ use async_io::Timer;
 use freya::prelude::*;
 use futures::StreamExt;
 use kanal::{Receiver, Sender, unbounded};
-use setup_core::{TantivySink, event};
+use setup_core::{Selection, TantivySink, event};
 
 use crate::dialog::Dialog;
 use crate::utils::data_dir;
@@ -59,19 +59,6 @@ pub fn manage_bibles(mut show_dialog: State<bool>, database: Arc<TantivySink>) -
         })
         .build().1
     );
-
-    {
-        let setup = setup.clone();
-        let database = database.clone();
-        thread::spawn(move || {
-            if let Err(e) = setup.install_cross(database.as_ref()) {
-                tracing::error!("Failed to install cross references: {e}");
-            }
-            if let Err(e) = setup.install_langs(database.as_ref(), &[]) {
-                tracing::error!("Failed to install languages: {e}");
-            }
-        });
-    }
 
     use_hook(|| {
         let setup = setup.clone();
@@ -164,7 +151,13 @@ pub fn manage_bibles(mut show_dialog: State<bool>, database: Arc<TantivySink>) -
                 let database = database.clone();
                 let bible_id = bible_id.clone();
                 move || {
-                    if let Err(e) = setup.install_bibles(database.as_ref(), &[bible_id.clone()]) {
+                    if let Err(e) = setup.run_with_sink(
+                        Selection {
+                            bibles: vec![bible_id.clone()],
+                            ..Default::default()
+                        },
+                        database.as_ref(),
+                    ) {
                         tracing::error!("Error instalando biblia {bible_id}: {e}");
                     }
                 }
