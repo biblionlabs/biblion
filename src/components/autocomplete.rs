@@ -508,73 +508,76 @@ impl Component for AutoCompleteInput {
                             ),
                     ),
             )
-            .maybe_child((open() && focus.is_focused() && !filtered_suggestions.is_empty()).then(|| {
-                rect()
-                    .width(Size::Fill)
-                    .max_height(Size::px(200.))
-                    .margin(Gaps::new(4., 0., 0., 0.))
-                    .child(
-                        rect()
-                            .layer(Layer::Overlay)
-                            .border(
-                                Border::new()
-                                    .fill(theme_colors.border_fill)
-                                    .width(1.)
-                                    .alignment(BorderAlignment::Inner),
-                            )
-                            .overflow(Overflow::Clip)
-                            .corner_radius(8.)
-                            .background(theme_colors.background)
-                            .padding(4.)
-                            .opacity(opacity)
-                            .scale(scale)
-                            .expanded()
-                            .child(
-                                ScrollView::new()
-                                    .direction(Direction::Vertical)
-                                    .show_scrollbar(true)
-                                    .children(filtered_suggestions.iter().enumerate().map(
-                                        |(idx, suggestion)| {
-                                            let is_selected = selected_index() == idx as i32;
-                                            let suggestion = suggestion.clone();
-                                            let mut value = value.clone();
-                                            let mut editable = editable.clone();
+            .maybe_child(
+                (open() && focus.is_focused() && !filtered_suggestions.is_empty()).then(|| {
+                    rect()
+                        .width(Size::Fill)
+                        .height(Size::px(200.))
+                        .layer(10)
+                        .position(Position::new_absolute().bottom(-204.))
+                        .child(
+                            rect()
+                                .layer(Layer::Overlay)
+                                .border(
+                                    Border::new()
+                                        .fill(theme_colors.border_fill)
+                                        .width(1.)
+                                        .alignment(BorderAlignment::Inner),
+                                )
+                                .overflow(Overflow::Clip)
+                                .corner_radius(8.)
+                                .background(theme_colors.background)
+                                .padding(4.)
+                                .opacity(opacity)
+                                .scale(scale)
+                                .expanded()
+                                .child(
+                                    ScrollView::new()
+                                        .direction(Direction::Vertical)
+                                        .show_scrollbar(true)
+                                        .children(filtered_suggestions.iter().enumerate().map(
+                                            |(idx, suggestion)| {
+                                                let is_selected = selected_index() == idx as i32;
+                                                let suggestion = suggestion.clone();
+                                                let mut value = value.clone();
+                                                let mut editable = editable.clone();
 
-                                            rect()
-                                                .width(Size::Fill)
-                                                .padding(8.)
-                                                .corner_radius(4.)
-                                                .background(if is_selected {
-                                                    Color::from_rgb(60, 60, 60)
-                                                } else {
-                                                    Color::TRANSPARENT
-                                                })
-                                                .on_pointer_enter(move |_| {
-                                                    selected_index.set(idx as i32);
-                                                })
-                                                .on_press({
-                                                    let suggestion = suggestion.clone();
-                                                    move |_| {
-                                                        *value.write() = suggestion.clone();
-                                                        editable
-                                                            .editor_mut()
-                                                            .write()
-                                                            .set(&suggestion);
-                                                        open.set(false);
-                                                        selected_index.set(-1);
-                                                    }
-                                                })
-                                                .child(
-                                                    label()
-                                                        .color(theme_colors.color)
-                                                        .text(suggestion),
-                                                )
-                                                .into()
-                                        },
-                                    )),
-                            ),
-                    )
-            }))
+                                                rect()
+                                                    .width(Size::Fill)
+                                                    .padding(8.)
+                                                    .corner_radius(4.)
+                                                    .background(if is_selected {
+                                                        Color::from_rgb(60, 60, 60)
+                                                    } else {
+                                                        Color::TRANSPARENT
+                                                    })
+                                                    .on_pointer_enter(move |_| {
+                                                        selected_index.set(idx as i32);
+                                                    })
+                                                    .on_press({
+                                                        let suggestion = suggestion.clone();
+                                                        move |_| {
+                                                            *value.write() = suggestion.clone();
+                                                            editable
+                                                                .editor_mut()
+                                                                .write()
+                                                                .set(&suggestion);
+                                                            open.set(false);
+                                                            selected_index.set(-1);
+                                                        }
+                                                    })
+                                                    .child(
+                                                        label()
+                                                            .color(theme_colors.color)
+                                                            .text(suggestion),
+                                                    )
+                                                    .into()
+                                            },
+                                        )),
+                                ),
+                        )
+                }),
+            )
     }
 
     fn render_key(&self) -> DiffKey {
