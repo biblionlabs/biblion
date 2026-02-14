@@ -2,20 +2,28 @@ use std::sync::Arc;
 
 use freya::animation::*;
 use freya::prelude::*;
+use freya::radio::*;
 use setup_core::TantivySink;
 
+use crate::AppChannel;
+use crate::AppState;
+use crate::components::AutoCompleteInput;
 use crate::components::{Toolbar, ToolbarItem, VersePanel};
 use crate::dialog::manage_bibles;
 use crate::utils::data_dir;
 
 pub fn init() -> impl IntoElement {
+    use_init_radio_station::<AppState, AppChannel>(AppState::default);
+    let radio = use_radio::<AppState, AppChannel>(AppChannel::BooksSuggesions);
+
     let mut theme = use_init_root_theme(|| PreferredTheme::Dark.to_theme());
     let mut show_bible_manager = use_state(|| false);
-    let mut search_state = use_state(String::new);
+    let search_state = use_state(String::new);
     let mut filtered_verses = use_state(Vec::new);
     let mut selected_verse = use_state(|| None::<(String, String, usize, usize)>);
 
     let database = Arc::new(TantivySink::from(data_dir(&["index"])));
+
     let platform = Platform::get();
     let root_size = platform.root_size.read().width;
     let root_size = if root_size < 768.0 {
@@ -26,14 +34,13 @@ pub fn init() -> impl IntoElement {
         35.
     };
 
-    let mut panel_width_anim =
-        use_animation_with_dependencies(&root_size, |c, root_size| {
-            c.on_change(OnChange::Finish);
-            AnimNum::new(0., *root_size)
-                .function(Function::Sine)
-                .ease(Ease::InOut)
-                .time(300)
-        });
+    let mut panel_width_anim = use_animation_with_dependencies(&root_size, |c, root_size| {
+        c.on_change(OnChange::Finish);
+        AnimNum::new(0., *root_size)
+            .function(Function::Sine)
+            .ease(Ease::InOut)
+            .time(300)
+    });
 
     let mut is_panel_open = use_state(|| false);
 
@@ -106,12 +113,10 @@ pub fn init() -> impl IntoElement {
                                     .spacing(10.)
                                     .horizontal()
                                     .child(
-                                        Input::new()
+                                        AutoCompleteInput::new(search_state, radio.read().books.clone())
                                             .auto_focus(true)
                                             .width(Size::Fill)
-                                            .placeholder("Search: Juan 1:3")
-                                            .value(search_state.read().clone())
-                                            .on_change(move |search| search_state.set(search)),
+                                            .placeholder("Search: Juan 1:3"),
                                     ),
                             )
                             .child(

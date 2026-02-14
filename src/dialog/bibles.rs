@@ -3,13 +3,14 @@ use std::thread;
 use std::time::Duration;
 
 use async_io::Timer;
-use freya::prelude::*;
+use freya::{prelude::*, radio::*};
 use futures::StreamExt;
 use kanal::{Receiver, Sender, unbounded};
 use setup_core::{Selection, TantivySink, event};
 
 use crate::dialog::Dialog;
 use crate::utils::data_dir;
+use crate::{AppChannel, AppState};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub struct BibleItem {
@@ -25,6 +26,7 @@ pub fn manage_bibles(mut show_dialog: State<bool>, database: Arc<TantivySink>) -
     let mut search = use_state(String::new);
     let mut all_bibles = use_state(Vec::<BibleItem>::new);
     let mut filtered = use_state(Vec::<BibleItem>::new);
+    let mut radio = use_radio::<AppState, AppChannel>(AppChannel::BooksSuggesions);
 
     let cache_dir = data_dir(&["cache"]);
     let (tx, rx): (Sender<(String, u64, u64)>, Receiver<(String, u64, u64)>) = unbounded();
@@ -63,6 +65,15 @@ pub fn manage_bibles(mut show_dialog: State<bool>, database: Arc<TantivySink>) -
     use_hook(|| {
         let setup = setup.clone();
         let database = database.clone();
+
+        let books = setup
+            .list_installed_books()
+            .unwrap_or_default()
+            .into_iter()
+            .flat_map(|(_, books)| books)
+            .collect::<Vec<_>>();
+
+        radio.write_channel(AppChannel::BooksSuggesions).books = books;
 
         let list_res: Result<
             Vec<(
@@ -195,11 +206,10 @@ pub fn manage_bibles(mut show_dialog: State<bool>, database: Arc<TantivySink>) -
                         .horizontal()
                         .spacing(8.)
                         .child(
-                            Input::new()
+                            Input::new(search)
                                 .width(Size::Fill)
                                 .placeholder("Search: Reina Valera 1960, KJV...")
-                                .value(search.read().clone())
-                                .on_change(move |v| search.set(v)),
+                                .on_submit(move |v| search.set(v)),
                         )
                         .into_element(),
                     VirtualScrollView::new_with_data(filtered, move |i, filtered| {
