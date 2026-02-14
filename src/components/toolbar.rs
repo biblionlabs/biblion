@@ -3,13 +3,13 @@ use freya::prelude::*;
 /// ToolbarItem representa un botón en la toolbar que al pulsarlo abrirá un ContextMenu.
 #[derive(Clone, PartialEq)]
 pub struct ToolbarItem {
-    pub label: ReadState<String>,
+    pub label: Readable<String>,
     pub menu: Menu,
     pub key: DiffKey,
 }
 
 impl ToolbarItem {
-    pub fn new(label: impl Into<ReadState<String>>, menu: Menu) -> Self {
+    pub fn new(label: impl Into<Readable<String>>, menu: Menu) -> Self {
         Self {
             label: label.into(),
             menu,

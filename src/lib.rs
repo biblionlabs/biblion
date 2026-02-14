@@ -3,7 +3,22 @@ pub mod components;
 pub mod dialog;
 pub mod utils;
 
+use freya::radio::RadioChannel;
+
 pub const APP_NAME: &str = env!("CARGO_CRATE_NAME");
+
+#[derive(Default, Clone)]
+#[allow(dead_code)]
+struct AppState {
+    books: Vec<String>,
+}
+
+#[derive(PartialEq, Eq, Clone, Debug, Copy, Hash)]
+pub enum AppChannel {
+    BooksSuggesions
+}
+
+impl RadioChannel<AppState> for AppChannel {}
 
 #[cfg(target_os = "android")]
 use {app::init, freya::prelude::*, winit::platform::android::activity::AndroidApp};
